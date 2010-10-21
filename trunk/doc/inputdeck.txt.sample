@@ -1,0 +1,12 @@
+gridx= 128 
+gridy= 1
+gridz= 1
+Lx= 1
+Ly= 1
+Lz= 1
+nu= 0.0000001
+vth= 0.4
+nmax= 11
+B= 1.0
+dB= 0.00
+ign= 10
