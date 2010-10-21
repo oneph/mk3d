@@ -298,7 +298,7 @@ int main()
 	    for(k=0;k<gridz;k++) 
 		ddfile << (n+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dx << '\t' << real(f[n][j][k][0][0]) << '\t' << real(f[n][j][k][1][0]) << '\t' << real(f[n][j][k][1][1]) << '\t' << -imag(f[n][j][k][1][1]) << endl;
     
-    thetathirecon(f,nmax,10,10,0,0);
+    thetathirecon(f,nmax,0,0,0,0);
     cout << "Initialised!!!" << endl;
     int rotate = 1;
     do{  
@@ -340,7 +340,7 @@ int main()
 	    harmonicfile << endl;
 	    if((count%(500*ign))==0)
 	      {
-		thetathirecon(f,nmax,10,10,0,count);sprintf(filename,"TDdens%i.dat",count);
+		thetathirecon(f,nmax,0,0,0,count);sprintf(filename,"TDdens%i.dat",count);
 		ofstream ddfile;
 		ddfile.open(filename);
 		ddfile.precision(16);
