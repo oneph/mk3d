@@ -4,7 +4,7 @@ CXX_LIBS = -lrfftw -lfftw
 
 CXX = g++
 
-OPTFLAGS = -O3
+OPTFLAGS = -g 
 
 CXXSOURCE = ./src/kalosmain3D3.cpp
 CXXOBJECTS = kalosmain3D3.o 
