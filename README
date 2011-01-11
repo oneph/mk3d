@@ -1,0 +1,7 @@
+Current version of MK3d utilises the fftw 2.5, Fast Fourier Transform library which can be downloaded from www.fftw.org.
+
+The included makefile must then be edited to direct the build process towards the library and the .h files.  This is the only requirement for the code build.
+
+The code comes with no warranty and no obligations.  We only ask that you cite the original paper in any published work which utilises the code.
+
+Many thanks.
