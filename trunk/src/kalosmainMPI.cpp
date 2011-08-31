@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 	
     double t=0;//The time coordinate
     double dx,dy,dz,dt;//Time and spatial increments
+    double dxG,dyG,dzG,dtG;
   
     double Bmag,dB,Bmax=0.0;
     int count = 0;//Timestep count - Integer number useful for file naming
@@ -83,9 +84,7 @@ int main(int argc, char **argv)
     time_t curr; 
     char *str;
 	//Following code loads parameters from the file (inputdeck.txt)created in external script 
-    //When running in MPI only the root processor will load parameters and broadcast to the others.
-	if(MPIrank==0)
-	{
+    
       str = new char [6];
       double num;
       int num1;
@@ -97,63 +96,113 @@ int main(int argc, char **argv)
       }
    
       finput >> str >> num1;
-      cout << str << " " << num1  << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num1  << endl;
+      }
       gridxG = num1;
       finput >> str >> num1;
-      cout << str << " " << num1  << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num1  << endl;
+      }
       gridyG = num1;
       finput >> str >> num1;
-      cout << str << " " << num1  << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num1  << endl;
+      }
       gridzG = num1;  
     
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       LxG = num;
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       LyG = num;
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       LzG = num;
-    
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       nu = num;
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       v = num;  
       finput >> str >> num1;
-      cout << str << " " << num1  << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num1  << endl;
+      }
       nmaxG = num1;//The number of harmonics in the expansion !!!!Expansion goes from 0 to nmax-1!!!!
-    
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       Bmag = num;
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       dB = num;  
       finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
       ign = int(num);
 	
 	  //Processor layout
       finput >> str >> num;
-	  cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+	  }
 	  N_procs_x = int(num);
 	  finput >> str >> num;
-      cout << str << " " << num << endl;
+      if(MPIrank==0)
+      {
+        cout << str << " " << num << endl;
+      }
 	  N_procs_y = int(num);  
 	  finput >> str >> num;
-	  cout << str << " " << num << endl;
+	  if(MPIrank==0)
+	  {
+	    cout << str << " " << num << endl;
+	  }
 	  N_procs_z = int(num);
 		
       curr = time(NULL);
-	  cout << "The date is = " << ctime(&curr);
-		
+	  if(MPIrank==0)
+	  {
+	    cout << "The date is = " << ctime(&curr);
+	  }
+	  
 	  //Function called which calculates the optimal parallelisation layout
       if((N_procs_x*N_procs_y*N_procs_z)!=MPIsize)
 	  {
-		  cout << "Mismatch between processor numbers and MPI size" << endl;
+		  if(MPIrank==0)
+		  {
+		    cout << "Mismatch between processor numbers and MPI size" << endl;
+		  }
+		  ierr = MPI_Finalize();
 		  return 0;
 	  }
 		
@@ -170,10 +219,14 @@ int main(int argc, char **argv)
 	  {
 		cout << "Too many processor in one (or more) directions" << endl;
 		cout << gridx << " " << gridy << " " << gridz << endl;
+		ierr = MPI_Finalize();
 		return 0;
 	  }
-		
-	  cout << gridx << " " << gridy << " " << gridz << endl;
+	
+	if(MPIrank==0)
+	{
+	  cout << "Points x y z on each processor" << endl;
+      cout << gridx << " " << gridy << " " << gridz << endl;
 	}
 	//File load ends here
 
@@ -181,9 +234,13 @@ int main(int argc, char **argv)
     threevector SystemsizeGlobal(LxG,LyG,LzG);
     threevector Gridsize(gridx,gridy,gridz);
     threevector GridsizeGlobal(gridxG,gridyG,gridzG);
-    /*
+    
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
     complex<double> *****f;
+    //complex<double> ****buffer;
+    //buffer = new complex<double> *[gridx];
+    //for(i=0
+    
     threevector ***B;//Magnetic field vector
     threevector ***A;//Magnetic thingy
     B = new threevector**[gridx];
@@ -210,115 +267,113 @@ int main(int argc, char **argv)
     dx = Lx/gridx;
     dy = Ly/gridy;
     dz = Lz/gridz;
+    
     threevector Elementsize(dx,dy,dz);
     double scale = smallest(dx,smallest(dy,dz));
-    cout << "SMALLEST LENGTH-SCALE = " << scale << endl;
+    if(MPIrank==0)
+    {
+      cout << "SMALLEST LENGTH-SCALE = " << scale << endl;
+    }
     dt = scale/(4.0*v);
-    cout << "TIMESTEP SIZE =" << dt << endl;    
-    double harmamp;
+    ierr = MPI_Allreduce(&dt,&dtG,1,MPI_DOUBLE,MPI_MIN,MPI_COMM_WORLD);
+    if(MPIrank==0)
+    {
+      cout << "TIMESTEP SIZE =" << dtG << endl;    
+    }
     //!!!!!! INITIAL CONDTIIONS!!!!!!!! 
     
     //MAGNETIC FIELD INITIALISATION
-    if(dB==0.0)
-    {
-	uniformB(B,Gridsize,Bmag);
-    }else
-    {
-	magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
-    }
+    //if(dB==0.0)
+    //{
+	//uniformB(B,Gridsize,Bmag);
+    //}else
+    //{
+	//magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
+    //}
     //ENDS    
 
     for(i=0;i<gridx;i++) 
     {
-	for(k=0;k<gridy;k++) 
-	{
+	  for(k=0;k<gridy;k++) 
+	  {
 	    Bxfile << B[i][k][gridz/2].getx() << '\t';
 	    Byfile << B[i][k][gridz/2].gety() << '\t';	  
 	    Bzfile << B[i][k][gridz/2].getz() << '\t';	    
 	    Bmagfile <<  B[i][k][gridz/2].mag() << '\t';
-	}
-	Bxfile << endl;	
-	Byfile << endl;
-	Bzfile << endl;
-	Bmagfile << endl;
+	  }
+	  Bxfile << endl;	
+	  Byfile << endl;
+	  Bzfile << endl;
+	  Bmagfile << endl;
     }  
     
     
     for(i=0;i<=gridx;i++)
     {
-	for(k=0;k<=gridy;k++) 
-	{
+	  for(k=0;k<=gridy;k++) 
+	  {
 	    Axfile << A[i][k][gridz/2].getx() << '\t';
 	    Ayfile << A[i][k][gridz/2].gety() << '\t'; 
 	    Azfile << A[i][k][gridz/2].getz() << '\t';
-	}
+	  }
 	Axfile << endl;	
 	Ayfile << endl;	
 	Azfile << endl;
     }
 
-//    for(i=10;i<gridx;i++) for(j=10;j<gridy;j++) for(k=10;k<gridz;k++)
-//	cout << "Divergence test   " << div3d(B,Elementsize,i,j,k) << endl;
-    
-    //   for(i=0;i<gridx;i++) 
-// 	 for(j=0;j<gridy;j++) 
-// 	     for(k=0;k<gridz;k++) 
-// 	     {
-// 		 B[i][j][k].print();
-// 	     }
-    
     for(i=0;i<=gridx;i++)//Deallocation of the memory allocated to the vector potential.
     {
-	for(j=0;j<=gridy;j++)
-	{
+	  for(j=0;j<=gridy;j++)
+	  {
 	    delete [] A[i][j];
-	}
-	delete [] A[i];
+	  }
+	  delete [] A[i];
     }
     delete [] A;
     
     //END OF FIELD INITIALISATION.  ONLY THE B-FIELD DATA REMAINS.....VECTOR POTENTIAL IS DELETED
 
-
     f = new complex<double>****[gridx];
     for(i=0;i<gridx;i++)
     {		
-	f[i] = new complex<double>***[gridy];
-   	for(j=0;j<gridy;j++)
-	{
+	  f[i] = new complex<double>***[gridy];
+   	  for(j=0;j<gridy;j++)
+	  {
 	    f[i][j] = new complex<double>**[gridz];
 	    for(k=0;k<gridz;k++)
 	    {
-		f[i][j][k]  = new complex<double>*[nmax];
-		for(m=0;m<nmax;m++)
-		{
+		  f[i][j][k]  = new complex<double>*[nmax];
+		  for(m=0;m<nmax;m++)
+		  {
 		    f[i][j][k][m] = new complex<double>[nmax];
-		}
+		  }
 	    }
-	}
+ 	  }
     }
  
     //!!!!!! INITIAL CONDTIIONS!!!!!!!!
     for(i=0;i<gridx;i++)
-	for(j=0;j<gridy;j++)
+	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++)
-		for(m=0;m<nmax;m++)  
+		  for(m=0;m<nmax;m++)  
 		    for(n=m;n<nmax;n++)
 		    {
-			f[i][j][k][n][m] = 0.0;
-		    }
+			  f[i][j][k][n][m] = 0.0;
+	 	    }
+    
     for(i=0;i<gridx;i++) 
-	for(j=0;j<gridy;j++)
+	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++) 
 	    {
-	      f[i][j][k][0][0] = 1.0 + 0.01*cos(1.0*pi*(((j+0.5)*dy/Ly)+((i+0.5)*dx/Lx)))*cos(1.0*pi*(((j+0.5)*dy/Ly)-((i+0.5)*dx/Lx)));
-	      //f[i][j][k][0][0] = 1.0*exp(-(i*dx - 0.5)*(i*dx - 0.5)/0.01)*exp(-(j*dx - 0.5)*(j*dx - 0.5)/0.01)*exp(-(k*dz - 0.5)*(k*dz - 0.5)/0.01);//Harmonic density perturbation
-	      compfile << (i+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dz << '\t' << B[i][j][k].getx() << '\t' << B[i][j][k].gety()  << '\t' << B[i][j][k].getz() << endl;
-	      if(B[i][j][k].mag()>Bmax)
-		{
-		  Bmax = B[i][j][k].mag();
-		}
+	        f[i][j][k][0][0] = 1.0 + 0.01*cos(1.0*pi*(((j+0.5)*dy/Ly)+((i+0.5)*dx/Lx)))*cos(1.0*pi*(((j+0.5)*dy/Ly)-((i+0.5)*dx/Lx)));
+	        //f[i][j][k][0][0] = 1.0*exp(-(i*dx - 0.5)*(i*dx - 0.5)/0.01)*exp(-(j*dx - 0.5)*(j*dx - 0.5)/0.01)*exp(-(k*dz - 0.5)*(k*dz - 0.5)/0.01);//Harmonic density perturbation
+	        compfile << (i+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dz << '\t' << B[i][j][k].getx() << '\t' << B[i][j][k].gety()  << '\t' << B[i][j][k].getz() << endl;
+	        if(B[i][j][k].mag()>Bmax)
+		    {
+		      Bmax = B[i][j][k].mag();
+		    }
 	    }
+	    
 //     cout << "Maximum magnetic field strength is " << Bmax << endl;
 //     if((2*pi/(4*Bmax*nmax))<dt)
 //     {
@@ -345,6 +400,7 @@ int main(int argc, char **argv)
     t=0.0;
     i=0;
 
+    /*
     double magan = fftanalysis(f,Gridsize,0);
     double maganini = magan;
     cout << "magini="<<" "<< maganini << endl;
@@ -426,41 +482,39 @@ int main(int argc, char **argv)
 
     }while(magan>(0.01*maganini));
     //}while(t<=1000.0);
+    */
+    
+    
     for(i=0;i<gridx;i++)
-    {
-	for(j=0;j<gridy;j++)
-	{
-	    delete [] B[i][j];
-	}
-	delete [] B[i];
-    }
+      {
+	    for(j=0;j<gridy;j++)
+	      {
+	        delete [] B[i][j];
+	      }
+	    delete [] B[i];
+      }
     delete [] B;
 
-
-
-
     for(i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
-    {
-	for(j=0;j<gridy;j++)
-	{
-	    for(k=0;k<gridz;k++)
-	    {
-		for(n=0;n<nmax;n++)	 
-		{
-		    delete [] f[i][j][k][n];
-		}
-		delete [] f[i][j][k];
-	    }
-	    delete [] f[i][j];
-	}
-	delete [] f[i];
-    }
+      {
+	    for(j=0;j<gridy;j++)
+ 	      {
+	        for(k=0;k<gridz;k++)
+	          {
+		        for(n=0;n<nmax;n++)	 
+		          {
+		            delete [] f[i][j][k][n];
+		          }
+		        delete [] f[i][j][k];
+	          }
+	        delete [] f[i][j];
+	      }
+	    delete [] f[i];
+      }
     delete [] f;
     delete [] str;
-	*/
-
-    ierr = MPI_Finalize();  
-  
+	
+    ierr = MPI_Finalize();   
     return 0;
     
 }   
