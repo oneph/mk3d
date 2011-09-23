@@ -74,6 +74,13 @@ int main(int argc, char **argv)
     double dx,dy,dz,dt;//Time and spatial increments
     double dxG,dyG,dzG,dtG;
   
+  	//Parameters for MPI decomposition
+    int mpindim = 1;
+    int nprocsdim = 2;
+    int periods = 0;
+    MPI_Comm comm1d;
+    //---------------------------------
+    
     double Bmag,dB,Bmax=0.0;
     int count = 0;//Timestep count - Integer number useful for file naming
     double v;//Velocity magnitude
@@ -230,6 +237,10 @@ int main(int argc, char **argv)
 	}
 	//File load ends here
 
+    //Setting up MPI Grid.
+    ierr = MPI_Cart_create(MPI_COMM_WORLD, mpindim, &nprocsdim, &periods, 0,&comm1d);
+    //----------------------------------------------------------------------------
+
     threevector Systemsize(Lx,Ly,Lz);
     threevector SystemsizeGlobal(LxG,LyG,LzG);
     threevector Gridsize(gridx,gridy,gridz);
@@ -280,17 +291,8 @@ int main(int argc, char **argv)
     {
       cout << "TIMESTEP SIZE =" << dtG << endl;    
     }
-    //!!!!!! INITIAL CONDTIIONS!!!!!!!! 
     
-    //MAGNETIC FIELD INITIALISATION
-    //if(dB==0.0)
-    //{
-	//uniformB(B,Gridsize,Bmag);
-    //}else
-    //{
-	//magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
-    //}
-    //ENDS    
+    //!!!!!! INITIAL CONDTIIONS!!!!!!!! 
 
     for(i=0;i<gridx;i++) 
     {
