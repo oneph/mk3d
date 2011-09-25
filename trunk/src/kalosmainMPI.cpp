@@ -76,8 +76,9 @@ int main(int argc, char **argv)
   
   	//Parameters for MPI decomposition
     int mpindim = 1;
-    int nprocsdim = 2;
-    int periods = 0;
+    int nprocsdim[1];
+    int periods[1];
+    int reorder;
     MPI_Comm comm1d;
     //---------------------------------
     
@@ -236,9 +237,25 @@ int main(int argc, char **argv)
       cout << gridx << " " << gridy << " " << gridz << endl;
 	}
 	//File load ends here
+	
+	nprocsdim[0] = 4;
+	mpindim = 1;
+	periods[0] = 1;
+	reorder = 1;
 
     //Setting up MPI Grid.
-    ierr = MPI_Cart_create(MPI_COMM_WORLD, mpindim, &nprocsdim, &periods, 0,&comm1d);
+    ierr = MPI_Cart_create(MPI_COMM_WORLD,mpindim,nprocsdim,periods,reorder,&comm1d);
+     
+    //Integer determining which direction 
+    int dir = 0;
+    //Integer determining the shift
+    int shift = 1;
+    int pleft, pright;
+    ierr = MPI_Cart_shift(comm1d,dir,shift,&MPIrank,&pright);
+    cout << "Rank" << MPIrank << " " << pright << endl;
+    shift = -1;
+    ierr = MPI_Cart_shift(comm1d,dir,shift,&MPIrank,&pleft);    
+    cout << "Rank" << MPIrank << " " << pleft << endl;
     //----------------------------------------------------------------------------
 
     threevector Systemsize(Lx,Ly,Lz);
