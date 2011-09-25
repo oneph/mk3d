@@ -2,6 +2,8 @@ CXX_IFLAGS = -I/usr/local/include -I./inc
 CXX_LFLAGS = -L/usr/local/lib
 CXX_LIBS = -lrfftw -lfftw
 
+EXEC = ~/MK3d/mk3d/run/mk3d.out
+
 CXX = mpic++
 
 OPTFLAGS = -g -O3 
