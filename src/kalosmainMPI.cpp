@@ -31,8 +31,7 @@ int main(int argc, char **argv)
 
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &MPIsize);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &MPIrank);    
-    cout << MPIrank << " of " << MPIsize << " processes" << endl; 
-
+   
     srand( (unsigned)time( NULL ) );
     ofstream Bxfile("BxComp.dat");
     ofstream Byfile("ByComp.dat");
@@ -74,13 +73,13 @@ int main(int argc, char **argv)
     double dx,dy,dz,dt;//Time and spatial increments
     double dxG,dyG,dzG,dtG;
   
-  	//Parameters for MPI decomposition
+  	//Parameters for MPI decomposition-At the moment set up for 1dimensional decomposition
     int mpindim = 1;
     int nprocsdim[1];
     int periods[1];
     int reorder, me;
     int pleft, pright;
-    MPI_Comm comm1d;
+    MPI_Comm comm1d,comm2d,comm3d;
     //---------------------------------
     
     double Bmag,dB,Bmax=0.0;
@@ -223,13 +222,17 @@ int main(int argc, char **argv)
 	Lx = LxG/N_procs_x;
 	Ly = LyG/N_procs_y;
 	Lz = LzG/N_procs_z;
+	nprocsdim[0] = N_procs_z;
+	//nprocsdim[1] = N_procs_x;
+	//nprocsdim[2] = N_procs_y;
 	//xcoord =
 	//ycoord = 
 	//zcoord =
 	nmax = nmaxG;
+	
 	if(gridx<1 || gridy<1 || gridz<1)
 	{
-	  cout << "Too many processor in one (or more) directions" << endl;
+	  cout << "Too many processors in one (or more) directions" << endl;
 	  cout << gridx << " " << gridy << " " << gridz << endl;
 	  ierr = MPI_Finalize();
   	  return 0;
@@ -270,6 +273,7 @@ int main(int argc, char **argv)
     
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
     complex<double> *****f;
+    complex<double> ****buffer;
     
     threevector ***B;//Magnetic field vector
     threevector ***A;//Magnetic thingy
@@ -277,19 +281,19 @@ int main(int argc, char **argv)
     A = new threevector**[gridx+1];
     for(i=0;i<=gridx;i++)  
     {		
-	A[i] = new threevector*[gridy+1];
-	for(j=0;j<=gridy;j++)
-	{
+	  A[i] = new threevector*[gridy+1];
+	  for(j=0;j<=gridy;j++)
+	  {
 	    A[i][j] = new threevector[gridz+1]; 
-	}
+	  }
     }
     for(i=0;i<gridx;i++)  
     {		
-	B[i] = new threevector*[gridy];
-	for(j=0;j<gridy;j++)
-	{
+	  B[i] = new threevector*[gridy];
+	  for(j=0;j<gridy;j++)
+	  {
 	    B[i][j] = new threevector[gridz]; 
-	}
+	  }
     }
     
     //End pf definition of distro function - Multi dimensional arrays = PITA
@@ -371,6 +375,21 @@ int main(int argc, char **argv)
 	    }
  	  }
     }
+    
+    //Buffer for inter-processor communication-Set up for one way decomposition
+    buffer = new complex<double>***[gridx];
+    for(i=0;i<gridx;i++)
+    {		
+	  buffer[i] = new complex<double>**[gridy];
+   	  for(j=0;j<gridy;j++)
+	  {
+	    buffer[i][j] = new complex<double>*[nmax];
+		for(m=0;m<nmax;m++)
+		{
+		  buffer[i][j][m] = new complex<double>[nmax];
+		}
+ 	  }
+    }
  
     //!!!!!! INITIAL CONDTIIONS!!!!!!!!
     for(i=0;i<gridx;i++)
@@ -394,29 +413,22 @@ int main(int argc, char **argv)
 		      Bmax = B[i][j][k].mag();
 		    }
 	    }
-	    
-//     cout << "Maximum magnetic field strength is " << Bmax << endl;
-//     if((2*pi/(4*Bmax*nmax))<dt)
-//     {
-// 	dt = 2*pi/(Bmax*nmax);
-// 	cout << "Timestep redefined due to high field strength  dt=" << dt << endl;
-//     }else
-//     {
-// 	cout << "Timestep defined by CFL  = " << dt << endl;
-//     }
 
     //End pf definition of distro function - Multi dimensional arrays = PITA
     //END OF INITIAL CONDITIONS
     
     //Code that writes to the Run Parameters file
-    datfile << "Run Parameters for KALOS run on" << " " << ctime(&curr)  << endl;
-    datfile << "Length of system  , Lx = " << Lx << ", Ly = " << Ly << ", Lz = " << Lz << endl;
-    datfile << "Number of Grid cells, Nx = " << gridx << ", Ny = " << gridy << ", Nz = " << gridz << endl;
-    datfile << "Number of Harmonics = " << nmax << endl;
-    datfile << "Thermal velocity, vth =" << " " << v << endl;
-    datfile << "Collision frequency = " << nu << endl;
-    datfile << "Timestep =" << dt << endl;
-    //End of parameter file.
+    if(MPIrank==0)
+	{
+      datfile << "Run Parameters for KALOS run on" << " " << ctime(&curr)  << endl;
+      datfile << "Length of system  , Lx = " << LxG << ", Ly = " << LyG << ", Lz = " << LzG << endl;
+      datfile << "Number of Grid cells, Nx = " << gridxG << ", Ny = " << gridyG << ", Nz = " << gridzG << endl;
+      datfile << "Number of Harmonics = " << nmax << endl;
+      datfile << "Thermal velocity, vth =" << " " << v << endl;
+      datfile << "Collision frequency = " << nu << endl;
+      datfile << "Timestep =" << dt << endl;
+      //End of parameter file.
+    }
     
     t=0.0;
     i=0;
@@ -532,7 +544,21 @@ int main(int argc, char **argv)
 	      }
 	    delete [] f[i];
       }
+    
+    for(i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
+      {
+	    for(j=0;j<gridy;j++)
+ 	      {
+		    for(n=0;n<nmax;n++)	 
+		      {
+		        delete [] buffer[i][j][n];
+		      }
+		      delete [] buffer[i][j];
+	       }
+	       delete [] buffer[i];
+        }
     delete [] f;
+    delete [] buffer;
     delete [] str;
 	
     ierr = MPI_Finalize();   
