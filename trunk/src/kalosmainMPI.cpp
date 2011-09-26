@@ -78,7 +78,8 @@ int main(int argc, char **argv)
     int mpindim = 1;
     int nprocsdim[1];
     int periods[1];
-    int reorder;
+    int reorder, me;
+    int pleft, pright;
     MPI_Comm comm1d;
     //---------------------------------
     
@@ -93,143 +94,146 @@ int main(int argc, char **argv)
     char *str;
 	//Following code loads parameters from the file (inputdeck.txt)created in external script 
     
-      str = new char [6];
-      double num;
-      int num1;
-      ifstream finput("inputdeck.txt");
-      if(!finput)
-      {
-	    cout << "Inputdeck.txt error - Program aborted" << endl;
-	    return -1;
-      }
+    str = new char [6];
+    double num;
+    int num1;
+    ifstream finput("inputdeck.txt");
+    if(!finput)
+    {
+	  cout << "Inputdeck.txt error - Program aborted" << endl;
+	  return -1;
+    }
    
-      finput >> str >> num1;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num1  << endl;
-      }
-      gridxG = num1;
-      finput >> str >> num1;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num1  << endl;
-      }
-      gridyG = num1;
-      finput >> str >> num1;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num1  << endl;
-      }
-      gridzG = num1;  
+    finput >> str >> num1;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num1  << endl;
+    }
+    gridxG = num1;
+    finput >> str >> num1;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num1  << endl;
+    }
+    gridyG = num1;
+    finput >> str >> num1;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num1  << endl;
+    }
+    gridzG = num1;  
     
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      LxG = num;
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      LyG = num;
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      LzG = num;
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      nu = num;
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      v = num;  
-      finput >> str >> num1;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num1  << endl;
-      }
-      nmaxG = num1;//The number of harmonics in the expansion !!!!Expansion goes from 0 to nmax-1!!!!
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      Bmag = num;
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      dB = num;  
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-      ign = int(num);
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    LxG = num;
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    LyG = num;
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    LzG = num;
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    nu = num;
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    v = num;  
+    finput >> str >> num1;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num1  << endl;
+    }
+    nmaxG = num1;//The number of harmonics in the expansion !!!!Expansion goes from 0 to nmax-1!!!!
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    Bmag = num;
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    dB = num;  
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+    ign = int(num);
 	
-	  //Processor layout
-      finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-	  }
-	  N_procs_x = int(num);
-	  finput >> str >> num;
-      if(MPIrank==0)
-      {
-        cout << str << " " << num << endl;
-      }
-	  N_procs_y = int(num);  
-	  finput >> str >> num;
-	  if(MPIrank==0)
-	  {
-	    cout << str << " " << num << endl;
-	  }
-	  N_procs_z = int(num);
+	//Processor layout
+    finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+	}
+	N_procs_x = int(num);
+	finput >> str >> num;
+    if(MPIrank==0)
+    {
+      cout << str << " " << num << endl;
+    }
+	N_procs_y = int(num);  
+	finput >> str >> num;
+	if(MPIrank==0)
+	{
+	  cout << str << " " << num << endl;
+	}
+	N_procs_z = int(num);
 		
-      curr = time(NULL);
-	  if(MPIrank==0)
-	  {
-	    cout << "The date is = " << ctime(&curr);
-	  }
+    curr = time(NULL);
+	if(MPIrank==0)
+	{
+	  cout << "The date is = " << ctime(&curr);
+	}
 	  
-	  //Function called which calculates the optimal parallelisation layout
-      if((N_procs_x*N_procs_y*N_procs_z)!=MPIsize)
+	//Function called which calculates the optimal parallelisation layout
+    if((N_procs_x*N_procs_y*N_procs_z)!=MPIsize)
+	{
+	  if(MPIrank==0)
 	  {
-		  if(MPIrank==0)
-		  {
-		    cout << "Mismatch between processor numbers and MPI size" << endl;
-		  }
-		  ierr = MPI_Finalize();
-		  return 0;
+		cout << "Mismatch between processor numbers and MPI size" << endl;
 	  }
+	  ierr = MPI_Finalize();
+	  return 0;
+	}
 		
-      //For the time being local values are set to the global ones
-      //apart from the z direction
-	  gridx = gridxG/N_procs_x;
-	  gridy = gridyG/N_procs_y;
-	  gridz = gridzG/N_procs_z;
-	  Lx = LxG/N_procs_x;
-	  Ly = LyG/N_procs_y;
-	  Lz = LzG/N_procs_z;
-	  nmax = nmaxG;
-	  if(gridx<1 || gridy<1 || gridz<1)
-	  {
-		cout << "Too many processor in one (or more) directions" << endl;
-		cout << gridx << " " << gridy << " " << gridz << endl;
-		ierr = MPI_Finalize();
-		return 0;
-	  }
+    //For the time being local values are set to the global ones
+    //apart from the z direction
+	gridx = gridxG/N_procs_x;
+	gridy = gridyG/N_procs_y;
+	gridz = gridzG/N_procs_z;
+	Lx = LxG/N_procs_x;
+	Ly = LyG/N_procs_y;
+	Lz = LzG/N_procs_z;
+	//xcoord =
+	//ycoord = 
+	//zcoord =
+	nmax = nmaxG;
+	if(gridx<1 || gridy<1 || gridz<1)
+	{
+	  cout << "Too many processor in one (or more) directions" << endl;
+	  cout << gridx << " " << gridy << " " << gridz << endl;
+	  ierr = MPI_Finalize();
+  	  return 0;
+	}
 	
 	if(MPIrank==0)
 	{
@@ -245,17 +249,18 @@ int main(int argc, char **argv)
 
     //Setting up MPI Grid.
     ierr = MPI_Cart_create(MPI_COMM_WORLD,mpindim,nprocsdim,periods,reorder,&comm1d);
-     
-    //Integer determining which direction 
+    ierr = MPI_Comm_rank(comm1d, &me);
+    //ierr = MPI_Cart_coords(comm1d, me, ndim, coords); 
+    
+    //Integer determining which direction -> In this case the only direction
     int dir = 0;
     //Integer determining the shift
     int shift = 1;
-    int pleft, pright;
-    ierr = MPI_Cart_shift(comm1d,dir,shift,&MPIrank,&pright);
-    cout << "Rank" << MPIrank << " " << pright << endl;
+    ierr = MPI_Cart_shift(comm1d,dir,shift,&me,&pright);
+    cout << "RankR" << " " << MPIrank << " " << pright << endl;
     shift = -1;
-    ierr = MPI_Cart_shift(comm1d,dir,shift,&MPIrank,&pleft);    
-    cout << "Rank" << MPIrank << " " << pleft << endl;
+    ierr = MPI_Cart_shift(comm1d,dir,shift,&me,&pleft);    
+    cout << "RankL" << " " << MPIrank << " " << pleft << endl;
     //----------------------------------------------------------------------------
 
     threevector Systemsize(Lx,Ly,Lz);
@@ -265,9 +270,6 @@ int main(int argc, char **argv)
     
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
     complex<double> *****f;
-    //complex<double> ****buffer;
-    //buffer = new complex<double> *[gridx];
-    //for(i=0
     
     threevector ***B;//Magnetic field vector
     threevector ***A;//Magnetic thingy
