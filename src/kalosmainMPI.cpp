@@ -21,14 +21,12 @@ using namespace std;
 int main(int argc, char **argv)
 {   
     int MPIrank,MPIsize,ierr;
-    //Initialise MPI
     ierr =  MPI_Init(&argc, &argv);
     if((ierr!=MPI_SUCCESS))
     {
        cout << "Could not initialise MPI" << endl;
        return 0;
     }
-
     ierr = MPI_Comm_size(MPI_COMM_WORLD, &MPIsize);
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &MPIrank);    
    
@@ -68,17 +66,18 @@ int main(int argc, char **argv)
 	int gridxG,gridyG,gridzG;
 	//Number of processors in each direction
 	int N_procs_x,N_procs_y,N_procs_z;
+	int parX = 0,parZ = 0,parY = 0;
 	
     double t=0;//The time coordinate
     double dx,dy,dz,dt;//Time and spatial increments
     double dxG,dyG,dzG,dtG;
   
   	//Parameters for MPI decomposition-At the moment set up for 1dimensional decomposition
-    int mpindim = 1;
-    int nprocsdim[1];
-    int periods[1];
-    int reorder, me;
-    int pleft, pright;
+    int mpindim;
+    int nprocsdim[3];
+    int periods[3];
+    int reorder;
+    int pleft, pright, me;
     MPI_Comm comm1d,comm2d,comm3d;
     //---------------------------------
     
@@ -90,7 +89,8 @@ int main(int argc, char **argv)
     complex<double> sum;
     double totdens;
     time_t curr; 
-    char *str;
+    char *str,str2;
+    char Bc_x,Bc_y,Bc_z, rin;
 	//Following code loads parameters from the file (inputdeck.txt)created in external script 
     
     str = new char [6];
@@ -196,6 +196,26 @@ int main(int argc, char **argv)
 	  cout << str << " " << num << endl;
 	}
 	N_procs_z = int(num);
+	
+	//Boundary conditions
+    finput >> str >> rin;
+    if(MPIrank==0)
+    {
+      cout << str << " " << rin << endl;
+	}
+	Bc_x = rin;
+	finput >> str >> rin;
+    if(MPIrank==0)
+    {
+      cout << str << " " << rin << endl;
+    }
+	Bc_y = rin;  
+	finput >> str >> rin;
+	if(MPIrank==0)
+	{
+	  cout << str << " " << rin << endl;
+	}
+	Bc_z = rin;
 		
     curr = time(NULL);
 	if(MPIrank==0)
@@ -223,12 +243,10 @@ int main(int argc, char **argv)
 	Ly = LyG/N_procs_y;
 	Lz = LzG/N_procs_z;
 	nprocsdim[0] = N_procs_z;
-	//nprocsdim[1] = N_procs_x;
-	//nprocsdim[2] = N_procs_y;
-	//xcoord =
-	//ycoord = 
-	//zcoord =
-	nmax = nmaxG;
+	nprocsdim[1] = N_procs_x;
+	nprocsdim[2] = N_procs_y;
+
+	nmax = nmaxG;//For the time being no parallelisation over the harmonics.
 	
 	if(gridx<1 || gridy<1 || gridz<1)
 	{
@@ -242,28 +260,82 @@ int main(int argc, char **argv)
 	{
 	  cout << "Points x y z on each processor" << endl;
       cout << gridx << " " << gridy << " " << gridz << endl;
+      cout << "Bc_x" << " " << "Bc_y" << " " << "Bc_z" << endl;
+	  cout << Bc_x << " " << Bc_y << " " << Bc_z << endl;
 	}
 	//File load ends here
 	
-	nprocsdim[0] = 4;
-	mpindim = 1;
-	periods[0] = 1;
+	//Code finds out how many directions to parallelise over.
+	mpindim = 0;
+	if(N_procs_x>1)
+	{
+	  mpindim += 1;
+	  parX = 1;
+	}
+	if(N_procs_y>1)
+	{
+	  mpindim += 1;
+	  parY = 1;
+	}
+	if(N_procs_z>1)
+	{
+	  mpindim += 1;
+	  parZ = 1;
+	}
+	
+	if(MPIrank==0)
+	{
+	  cout << "The code will parallelise over " << mpindim << " directions." << endl;
+	}
+	if(mpindim==0 && MPIrank==0)
+	{
+	  cout << "You are trying to run a single procesor job with the multi-processor code" << endl;
+	}
+	
+	//--------------------------------------------------------
+	
+	//Set parallelisation boundary conditions for communicators.
+	if(Bc_z=='p')
+	{
+	  periods[0] = 1;
+	}else
+		{
+		  periods[0] = 0;
+		}
+		
+	if(Bc_x=='p')
+	{
+	  periods[1] = 1;
+	}else
+		{
+		  periods[1] = 0;
+		}
+		
+	if(Bc_y=='p')
+	{
+	  periods[2] = 1;
+	}else
+		{
+		  periods[2] = 0;
+		}
 	reorder = 1;
+    //--------------------------------------------------------
 
-    //Setting up MPI Grid.
+    //Setting up MPI Grid and communicators.
     ierr = MPI_Cart_create(MPI_COMM_WORLD,mpindim,nprocsdim,periods,reorder,&comm1d);
-    ierr = MPI_Comm_rank(comm1d, &me);
-    //ierr = MPI_Cart_coords(comm1d, me, ndim, coords); 
-    
+    ierr = MPI_Comm_rank(comm1d, &me); 
+    //ierr = MPI_Cart_coords(comm1d, me, mpindim, &coords);
+    //get_neighbours1D(comm1d,me,pright,pleft);
+      
     //Integer determining which direction -> In this case the only direction
     int dir = 0;
     //Integer determining the shift
     int shift = 1;
     ierr = MPI_Cart_shift(comm1d,dir,shift,&me,&pright);
-    cout << "RankR" << " " << MPIrank << " " << pright << endl;
     shift = -1;
-    ierr = MPI_Cart_shift(comm1d,dir,shift,&me,&pleft);    
-    cout << "RankL" << " " << MPIrank << " " << pleft << endl;
+    ierr = MPI_Cart_shift(comm1d,dir,shift,&me,&pleft);  
+      
+    cout << "RankL" << " " << MPIrank << " " << pleft << " " << "RightR" << " " << pright << endl;
     //----------------------------------------------------------------------------
 
     threevector Systemsize(Lx,Ly,Lz);
@@ -325,26 +397,18 @@ int main(int argc, char **argv)
 	    Byfile << B[i][k][gridz/2].gety() << '\t';	  
 	    Bzfile << B[i][k][gridz/2].getz() << '\t';	    
 	    Bmagfile <<  B[i][k][gridz/2].mag() << '\t';
+	    Axfile << A[i][k][gridz/2].getx() << '\t';
+	    Ayfile << A[i][k][gridz/2].gety() << '\t'; 
+	    Azfile << A[i][k][gridz/2].getz() << '\t';
 	  }
 	  Bxfile << endl;	
 	  Byfile << endl;
 	  Bzfile << endl;
 	  Bmagfile << endl;
+	  Axfile << endl;	
+	  Ayfile << endl;	
+	  Azfile << endl;
     }  
-    
-    
-    for(i=0;i<=gridx;i++)
-    {
-	  for(k=0;k<=gridy;k++) 
-	  {
-	    Axfile << A[i][k][gridz/2].getx() << '\t';
-	    Ayfile << A[i][k][gridz/2].gety() << '\t'; 
-	    Azfile << A[i][k][gridz/2].getz() << '\t';
-	  }
-	Axfile << endl;	
-	Ayfile << endl;	
-	Azfile << endl;
-    }
 
     for(i=0;i<=gridx;i++)//Deallocation of the memory allocated to the vector potential.
     {
@@ -392,21 +456,16 @@ int main(int argc, char **argv)
     }
  
     //!!!!!! INITIAL CONDTIIONS!!!!!!!!
-    for(i=0;i<gridx;i++)
-	  for(j=0;j<gridy;j++)
-	    for(k=0;k<gridz;k++)
-		  for(m=0;m<nmax;m++)  
-		    for(n=m;n<nmax;n++)
-		    {
-			  f[i][j][k][n][m] = 0.0;
-	 	    }
-    
     for(i=0;i<gridx;i++) 
 	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++) 
 	    {
+	      for(m=0;m<nmax;m++)  
+		    for(n=m;n<nmax;n++)
+		    {
+			  f[i][j][k][n][m] = 0.0;
+	 	    }
 	        f[i][j][k][0][0] = 1.0 + 0.01*cos(1.0*pi*(((j+0.5)*dy/Ly)+((i+0.5)*dx/Lx)))*cos(1.0*pi*(((j+0.5)*dy/Ly)-((i+0.5)*dx/Lx)));
-	        //f[i][j][k][0][0] = 1.0*exp(-(i*dx - 0.5)*(i*dx - 0.5)/0.01)*exp(-(j*dx - 0.5)*(j*dx - 0.5)/0.01)*exp(-(k*dz - 0.5)*(k*dz - 0.5)/0.01);//Harmonic density perturbation
 	        compfile << (i+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dz << '\t' << B[i][j][k].getx() << '\t' << B[i][j][k].gety()  << '\t' << B[i][j][k].getz() << endl;
 	        if(B[i][j][k].mag()>Bmax)
 		    {
@@ -422,6 +481,7 @@ int main(int argc, char **argv)
 	{
       datfile << "Run Parameters for KALOS run on" << " " << ctime(&curr)  << endl;
       datfile << "Length of system  , Lx = " << LxG << ", Ly = " << LyG << ", Lz = " << LzG << endl;
+      datfile << "Boundary conditions, Bc_x = " << Bc_x << ", Bc_y = " << Bc_y << ", Bc_z = " << Bc_z << endl;
       datfile << "Number of Grid cells, Nx = " << gridxG << ", Ny = " << gridyG << ", Nz = " << gridzG << endl;
       datfile << "Number of Harmonics = " << nmax << endl;
       datfile << "Thermal velocity, vth =" << " " << v << endl;
@@ -462,13 +522,31 @@ int main(int argc, char **argv)
     cout << "Initialised!!!" << endl;
     int rotate = 1;
     do{  
-	advectionx(f,nmax,gridx,gridy,gridz,dx,v,dt,'p');
+    
+	if(parX==1)
+	{
+	  communicate_buffer_x;
+	}
+	
+	if(parY==1)
+	{
+	  communicate_buffer_y;
+	}
+	
+	if(parZ==1)
+	{
+	  communicate_buffer_z;
+	}
+	
+	advectionx(f,nmax,gridx,gridy,gridz,dx,v,dt,Bc_x);
 	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
 	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu);  
-	advectiony(f,nmax,gridy,gridx,gridz,dy,v,dt,'p');
+	
+	advectiony(f,nmax,gridy,gridx,gridz,dy,v,dt,Bc_y);
 	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
 	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
-	advectionz(f,nmax,gridz,gridx,gridy,dz,v,dt,'p'); 
+	
+	advectionz(f,nmax,gridz,gridx,gridy,dz,v,dt,Bc_y); 
 	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
 	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
 	
@@ -511,13 +589,10 @@ int main(int argc, char **argv)
 	      }	
 	}
        	       
-      	
-
     }while(magan>(0.01*maganini));
     //}while(t<=1000.0);
     */
-    
-    
+        
     for(i=0;i<gridx;i++)
       {
 	    for(j=0;j<gridy;j++)
