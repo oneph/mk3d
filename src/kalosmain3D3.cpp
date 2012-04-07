@@ -64,8 +64,8 @@ int main()
     ifstream finput("inputdeck.txt");
     if(!finput)
     {
-	cout << "Inputdeck.txt error - Program aborted" << endl;
-	return -1;
+	  cout << "Inputdeck.txt error - Program aborted" << endl;
+	  return -1;
     }
    
     finput >> str >> num1;
@@ -116,8 +116,8 @@ int main()
     cout << "The date is = " << ctime(&curr);
     threevector Systemsize(Lx,Ly,Lz);
     threevector Gridsize(gridx,gridy,gridz);
+    
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
-    //complex<double> *****f;
     threevector ***B = AllocateThreevector3D(gridx,gridy,gridz); 
     threevector ***A = AllocateThreevector3D(gridx+1,gridy+1,gridz+1); 
     complex<double> *****f = AllocateDistroF(gridx,gridy,gridz,nmax);
@@ -146,33 +146,32 @@ int main()
     //ENDS    
 
     for(i=0;i<gridx;i++) 
-    {
-	for(k=0;k<gridy;k++) 
-	{
-	    Bxfile << B[i][k][gridz/2].getx() << '\t';
-	    Byfile << B[i][k][gridz/2].gety() << '\t';	  
-	    Bzfile << B[i][k][gridz/2].getz() << '\t';	    
-	    Bmagfile <<  B[i][k][gridz/2].mag() << '\t';
-	}
-	Bxfile << endl;	
-	Byfile << endl;
-	Bzfile << endl;
-	Bmagfile << endl;
-    }  
-    
+      {
+	  for(k=0;k<gridy;k++) 
+	    {
+	      Bxfile << B[i][k][gridz/2].getx() << '\t';
+	      Byfile << B[i][k][gridz/2].gety() << '\t';	  
+	      Bzfile << B[i][k][gridz/2].getz() << '\t';	    
+	      Bmagfile <<  B[i][k][gridz/2].mag() << '\t';
+	    }
+	    Bxfile << endl;	
+	    Byfile << endl;
+	    Bzfile << endl;
+	    Bmagfile << endl;
+      }  
     
     for(i=0;i<=gridx;i++)
-    {
-	for(k=0;k<=gridy;k++) 
-	{
-	    Axfile << A[i][k][gridz/2].getx() << '\t';
-	    Ayfile << A[i][k][gridz/2].gety() << '\t'; 
-	    Azfile << A[i][k][gridz/2].getz() << '\t';
-	}
-	Axfile << endl;	
-	Ayfile << endl;	
-	Azfile << endl;
-    }
+      {
+	  for(k=0;k<=gridy;k++) 
+	    {
+	      Axfile << A[i][k][gridz/2].getx() << '\t';
+	      Ayfile << A[i][k][gridz/2].gety() << '\t'; 
+	      Azfile << A[i][k][gridz/2].getz() << '\t';
+	    }
+	    Axfile << endl;	
+	    Ayfile << endl;	
+	    Azfile << endl;
+      }
 	//Free up the memory from the vector potential
     FreeThreevector3D(A,gridx+1,gridy+1);
     
@@ -238,9 +237,9 @@ int main()
     ddfile.open(filename);
     ddfile.precision(16);
     for(n=0;n<gridx;n++) 
-	for(j=0;j<gridy;j++)
+	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++) 
-		ddfile << (n+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dx << '\t' << real(f[n][j][k][0][0]) << '\t' << real(f[n][j][k][1][0]) << '\t' << real(f[n][j][k][1][1]) << '\t' << -imag(f[n][j][k][1][1]) << endl;
+		  ddfile << (n+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dx << '\t' << real(f[n][j][k][0][0]) << '\t' << real(f[n][j][k][1][0]) << '\t' << real(f[n][j][k][1][1]) << '\t' << -imag(f[n][j][k][1][1]) << endl;
     
     thetathirecon(f,nmax,0,0,0,0);
     cout << "Initialised!!!" << endl;
