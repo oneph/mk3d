@@ -1,0 +1,8 @@
+Run Parameters for KALOS run on Sat Apr  7 22:18:45 2012
+
+Length of system  , Lx = 1, Ly = 1, Lz = 1
+Number of Grid cells, Nx = 8, Ny = 8, Nz = 8
+Number of Harmonics = 4
+Thermal velocity, vth = 0.4
+Collision frequency = 1e-07
+Timestep =0.078125
