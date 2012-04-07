@@ -173,16 +173,9 @@ int main()
 	Ayfile << endl;	
 	Azfile << endl;
     }
+	//Free up the memory from the vector potential
+    FreeThreevector3D(A,gridx+1,gridy+1);
     
-    for(i=0;i<=gridx;i++)//Deallocation of the memory allocated to the vector potential.
-    {
-	for(j=0;j<=gridy;j++)
-	{
-	    delete [] A[i][j];
-	}
-	delete [] A[i];
-    }
-    delete [] A;
     
     //END OF FIELD INITIALISATION.  ONLY THE B-FIELD DATA REMAINS.....VECTOR POTENTIAL IS DELETED
 
@@ -337,16 +330,8 @@ int main()
      }while(magan>(0.01*maganini));
     //}while(t<=1000.0);
     
-    for(i=0;i<gridx;i++)
-    {
-	  for(j=0;j<gridy;j++)
-	  {
-	    delete [] B[i][j];
-	  }
-	  delete [] B[i];
-    }
-    delete [] B;
-
+    FreeThreevector3D(B,gridx,gridy);
+    
     for(i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
     {
 	  for(j=0;j<gridy;j++)

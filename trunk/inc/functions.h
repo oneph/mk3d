@@ -286,3 +286,16 @@ threevector ***AllocateThreevector3D(int gridx, int gridy, int gridz)
       }
       return dynamicArray;
   }
+  
+  void FreeThreevector3D(threevector ***dArray,int gridx,int gridy)
+  {
+    for(int i=0;i<gridx;i++)
+    {
+	  for(int j=0;j<gridy;j++)
+	  {
+	    delete [] dArray[i][j];
+	  }
+	  delete [] dArray[i];
+    }
+    delete [] dArray;
+  }
