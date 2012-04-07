@@ -3,6 +3,7 @@
 #include <fstream>
 //#include "functions.h"
 #include <fftw.h>
+
 #include <rfftw.h>
 
 using namespace std;

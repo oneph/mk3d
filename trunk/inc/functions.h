@@ -269,3 +269,20 @@ void curl2dXZ(threevector ***B,threevector ***A,threevector sys,threevector ele,
 	    B[i][j][k].setz(zcomp);
 	}
 }
+
+//Generate a three-dimensional dynamically allocated structure
+threevector ***AllocateThreevector3D(int gridx, int gridy, int gridz)
+  {
+      threevector ***dynamicArray;
+
+      dynamicArray = new threevector**[gridx];
+      for(int i=0;i<gridx;i++)  
+      {		
+	    dynamicArray[i] = new threevector*[gridy];
+	    for(int j=0;j<gridy;j++)
+	    {
+	      dynamicArray[i][j] = new threevector[gridz]; 
+	    }
+      }
+      return dynamicArray;
+  }

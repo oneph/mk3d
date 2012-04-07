@@ -13,6 +13,7 @@
 #include "VTKfiles.h"
 #include "collisions.h"
 #include "magsetup.h"
+#include "datastruct.h"
 //#include <mpi.h>
 
 using namespace std;
@@ -31,7 +32,8 @@ int main()
     ofstream datfile("RunParameters.txt");
     ofstream harmonicfile("HarmonicAmplitudes.dat");
     ofstream fftfile("FFTanalysis.dat");
-    int i,j,k,n,m,p;
+    int i,j,k,n,m,p,testing;
+    
     char filename[20];
     cout.precision(8);
     compfile.precision(16);
@@ -105,6 +107,9 @@ int main()
     finput >> str >> num;
     cout << str << " " << num << endl;
     ign = int(num);
+    finput >> str >> num;
+    cout << str << " " << num << endl;
+    testing = int(num);
    
     //File load ends here
     curr = time(NULL);
@@ -113,27 +118,10 @@ int main()
     threevector Gridsize(gridx,gridy,gridz);
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
     complex<double> *****f;
-    threevector ***B;//Magnetic field vector
-    threevector ***A;//Magnetic thingy
-    B = new threevector**[gridx];
-    A = new threevector**[gridx+1];
-    for(i=0;i<=gridx;i++)  
-    {		
-	A[i] = new threevector*[gridy+1];
-	for(j=0;j<=gridy;j++)
-	{
-	    A[i][j] = new threevector[gridz+1]; 
-	}
-    }
-    for(i=0;i<gridx;i++)  
-    {		
-	B[i] = new threevector*[gridy];
-	for(j=0;j<gridy;j++)
-	{
-	    B[i][j] = new threevector[gridz]; 
-	}
-    }
-    
+     
+    threevector ***B = AllocateThreevector3D(gridx,gridy,gridz); 
+    threevector ***A = AllocateThreevector3D(gridx+1,gridy+1,gridz+1); 
+
     //End pf definition of distro function - Multi dimensional arrays = PITA
     //Cartesian Grid!!!
     dx = Lx/gridx;
@@ -150,10 +138,10 @@ int main()
     //MAGNETIC FIELD INITIALISATION
     if(dB==0.0)
     {
-	uniformB(B,Gridsize,Bmag);
+	  uniformB(B,Gridsize,Bmag);
     }else
     {
-	magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
+	  magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
     }
     //ENDS    
 
@@ -185,16 +173,6 @@ int main()
 	Ayfile << endl;	
 	Azfile << endl;
     }
-
-//    for(i=10;i<gridx;i++) for(j=10;j<gridy;j++) for(k=10;k<gridz;k++)
-//	cout << "Divergence test   " << div3d(B,Elementsize,i,j,k) << endl;
-    
-    //   for(i=0;i<gridx;i++) 
-// 	 for(j=0;j<gridy;j++) 
-// 	     for(k=0;k<gridz;k++) 
-// 	     {
-// 		 B[i][j][k].print();
-// 	     }
     
     for(i=0;i<=gridx;i++)//Deallocation of the memory allocated to the vector potential.
     {
@@ -301,22 +279,29 @@ int main()
     thetathirecon(f,nmax,0,0,0,0);
     cout << "Initialised!!!" << endl;
     int rotate = 1;
+    if(testing==1)
+    {
+      cout << "Testing Mode : Code quits before time integration" << endl;
+      return 0;
+    }
+    
     do{  
-	advectionx(f,nmax,gridx,gridy,gridz,dx,v,dt,'p');
-	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
-	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu);  
-	advectiony(f,nmax,gridy,gridx,gridz,dy,v,dt,'p');
-	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
-	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
-	advectionz(f,nmax,gridz,gridx,gridy,dz,v,dt,'p'); 
-	magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
-	collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
 	
-	t+=dt;     
-	count++;	       
+	  advectionx(f,nmax,gridx,gridy,gridz,dx,v,dt,'p');
+	  magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
+	  collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu);  
+	  advectiony(f,nmax,gridy,gridx,gridz,dy,v,dt,'p');
+	  magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
+	  collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
+	  advectionz(f,nmax,gridz,gridx,gridy,dz,v,dt,'p'); 
+	  magadvance(f,B,nmax,dt/3.0,gridx,gridy,gridz);
+	  collision(f,nmax,dt/3.0,gridx,gridy,gridz,nu); 
+	
+	  t+=dt;     
+	  count++;	       
       	
-	if((count%ign)==0)
-	{
+	  if((count%ign)==0)
+	  {
 	    i = count/ign;
 	    //	vtkfile(f,B,gridx,gridy,gridz,dx,dy,dz,i);
 	    cout << i << endl; 
@@ -328,65 +313,58 @@ int main()
 	    magan = fftanalysis(f,Gridsize,t);
 	    for(m=0;m<nmax;m++)
 	      for(p=0;p<=m;p++)
-		{
-		  harmamp=0.0;
-		  for(n=0;n<gridx;n++) 
-		    for(j=0;j<gridy;j++)
-		      for(k=0;k<gridz;k++) 
-			harmamp+= abs(f[n][j][k][m][p])/(gridx*gridy*gridz);
-		  
-		  harmonicfile << harmamp << '\t';
-		}
-	    harmonicfile << endl;
-	    if((count%(500*ign))==0)
+		  {
+		    harmamp=0.0;
+		    for(n=0;n<gridx;n++) 
+		      for(j=0;j<gridy;j++)
+		        for(k=0;k<gridz;k++) 
+			      harmamp+= abs(f[n][j][k][m][p])/(gridx*gridy*gridz);
+		          harmonicfile << harmamp << '\t';
+		  }
+	      harmonicfile << endl;
+	      if((count%(500*ign))==0)
 	      {
-		thetathirecon(f,nmax,0,0,0,count);sprintf(filename,"TDdens%i.dat",count);
-		ofstream ddfile;
-		ddfile.open(filename);
-		ddfile.precision(16);
-		for(n=0;n<gridx;n++) 
-		  for(j=0;j<gridy;j++)
-		    for(k=0;k<gridz;k++) 
-		      ddfile << (n+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dx << '\t' << real(f[n][j][k][0][0]) << '\t' << real(f[n][j][k][1][0]) << '\t' << real(f[n][j][k][1][1]) << '\t' << -imag(f[n][j][k][1][1]) << endl;
-	      }	
-	}
-       	       
-      	
-
-    }while(magan>(0.01*maganini));
+		    thetathirecon(f,nmax,0,0,0,count);sprintf(filename,"TDdens%i.dat",count);
+		    ofstream ddfile;
+		    ddfile.open(filename);
+		    ddfile.precision(16);
+		    for(n=0;n<gridx;n++) 
+		      for(j=0;j<gridy;j++)
+		        for(k=0;k<gridz;k++) 
+		          ddfile << (n+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dx << '\t' << real(f[n][j][k][0][0]) << '\t' << real(f[n][j][k][1][0]) << '\t' << real(f[n][j][k][1][1]) << '\t' << -imag(f[n][j][k][1][1]) << endl;
+	       }	
+	     }
+     }while(magan>(0.01*maganini));
     //}while(t<=1000.0);
+    
     for(i=0;i<gridx;i++)
     {
-	for(j=0;j<gridy;j++)
-	{
+	  for(j=0;j<gridy;j++)
+	  {
 	    delete [] B[i][j];
-	}
-	delete [] B[i];
+	  }
+	  delete [] B[i];
     }
     delete [] B;
 
-
-
-
     for(i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
     {
-	for(j=0;j<gridy;j++)
-	{
+	  for(j=0;j<gridy;j++)
+	  {
 	    for(k=0;k<gridz;k++)
 	    {
-		for(n=0;n<nmax;n++)	 
-		{
+		  for(n=0;n<nmax;n++)	 
+		  {
 		    delete [] f[i][j][k][n];
-		}
-		delete [] f[i][j][k];
+		  }
+		  delete [] f[i][j][k];
 	    }
 	    delete [] f[i][j];
-	}
-	delete [] f[i];
+	  }
+	  delete [] f[i];
     }
     delete [] f;
     delete [] str;
-
     return 0;
     
 }   
