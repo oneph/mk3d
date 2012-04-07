@@ -299,3 +299,48 @@ threevector ***AllocateThreevector3D(int gridx, int gridy, int gridz)
     }
     delete [] dArray;
   }
+  
+  //Generate a three-dimensional dynamically allocated structure
+  complex<double> *****AllocateDistroF(int gridx, int gridy, int gridz, int nmax)
+  {
+      complex<double> *****dynamicArray;
+      dynamicArray = new complex<double>****[gridx];
+      for(int i=0;i<gridx;i++)
+      {		
+	    dynamicArray[i] = new complex<double>***[gridy];
+   	    for(int j=0;j<gridy;j++)
+	    {
+	      dynamicArray[i][j] = new complex<double>**[gridz];
+	      for(int k=0;k<gridz;k++)
+	      {
+		    dynamicArray[i][j][k]  = new complex<double>*[nmax];
+		    for(int m=0;m<nmax;m++)
+		    {
+		      dynamicArray[i][j][k][m] = new complex<double>[nmax];
+		    }
+	      }
+	    }
+      }
+    return dynamicArray;
+  }
+  
+  void FreeDistrF(complex<double> *****dArray,int gridx,int gridy,int gridz,int nmax)
+  {
+    for(int i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
+    {
+	  for(int j=0;j<gridy;j++)
+	  {
+	    for(int k=0;k<gridz;k++)
+	    {
+		  for(int n=0;n<nmax;n++)	 
+		  {
+		    delete [] dArray[i][j][k][n];
+		  }
+		  delete [] dArray[i][j][k];
+	    }
+	    delete [] dArray[i][j];
+	  }
+	  delete [] dArray[i];
+    }
+    delete [] dArray;
+  }

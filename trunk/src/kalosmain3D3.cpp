@@ -117,10 +117,10 @@ int main()
     threevector Systemsize(Lx,Ly,Lz);
     threevector Gridsize(gridx,gridy,gridz);
     //Distribution function - First array is the x position element,second is y, third is z, fourth array is the n Legengre ploynomial number, and m is the harmonic
-    complex<double> *****f;
-     
+    //complex<double> *****f;
     threevector ***B = AllocateThreevector3D(gridx,gridy,gridz); 
     threevector ***A = AllocateThreevector3D(gridx+1,gridy+1,gridz+1); 
+    complex<double> *****f = AllocateDistroF(gridx,gridy,gridz,nmax);
 
     //End pf definition of distro function - Multi dimensional arrays = PITA
     //Cartesian Grid!!!
@@ -140,9 +140,9 @@ int main()
     {
 	  uniformB(B,Gridsize,Bmag);
     }else
-    {
-	  magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
-    }
+      {
+	    magfieldsetup3dIso(B,A,Systemsize,Elementsize,Gridsize,Bmag,dB);//Initialisation of the magnetic field structure
+      }
     //ENDS    
 
     for(i=0;i<gridx;i++) 
@@ -178,56 +178,29 @@ int main()
     
     
     //END OF FIELD INITIALISATION.  ONLY THE B-FIELD DATA REMAINS.....VECTOR POTENTIAL IS DELETED
-
-
-    f = new complex<double>****[gridx];
-    for(i=0;i<gridx;i++)
-    {		
-	f[i] = new complex<double>***[gridy];
-   	for(j=0;j<gridy;j++)
-	{
-	    f[i][j] = new complex<double>**[gridz];
-	    for(k=0;k<gridz;k++)
-	    {
-		f[i][j][k]  = new complex<double>*[nmax];
-		for(m=0;m<nmax;m++)
-		{
-		    f[i][j][k][m] = new complex<double>[nmax];
-		}
-	    }
-	}
-    }
  
     //!!!!!! INITIAL CONDTIIONS!!!!!!!!
     for(i=0;i<gridx;i++)
-	for(j=0;j<gridy;j++)
+	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++)
-		for(m=0;m<nmax;m++)  
+		  for(m=0;m<nmax;m++)  
 		    for(n=m;n<nmax;n++)
 		    {
-			f[i][j][k][n][m] = 0.0;
+			  f[i][j][k][n][m] = 0.0;
 		    }
+    
     for(i=0;i<gridx;i++) 
-	for(j=0;j<gridy;j++)
+	  for(j=0;j<gridy;j++)
 	    for(k=0;k<gridz;k++) 
 	    {
 	      f[i][j][k][0][0] = 1.0 + 0.01*cos(1.0*pi*(((j+0.5)*dy/Ly)+((i+0.5)*dx/Lx)))*cos(1.0*pi*(((j+0.5)*dy/Ly)-((i+0.5)*dx/Lx)));
 	      //f[i][j][k][0][0] = 1.0*exp(-(i*dx - 0.5)*(i*dx - 0.5)/0.01)*exp(-(j*dx - 0.5)*(j*dx - 0.5)/0.01)*exp(-(k*dz - 0.5)*(k*dz - 0.5)/0.01);//Harmonic density perturbation
 	      compfile << (i+0.5)*dx << '\t' << (j+0.5)*dy << '\t' << (k+0.5)*dz << '\t' << B[i][j][k].getx() << '\t' << B[i][j][k].gety()  << '\t' << B[i][j][k].getz() << endl;
 	      if(B[i][j][k].mag()>Bmax)
-		{
-		  Bmax = B[i][j][k].mag();
-		}
+		  {
+		    Bmax = B[i][j][k].mag();
+		  }
 	    }
-//     cout << "Maximum magnetic field strength is " << Bmax << endl;
-//     if((2*pi/(4*Bmax*nmax))<dt)
-//     {
-// 	dt = 2*pi/(Bmax*nmax);
-// 	cout << "Timestep redefined due to high field strength  dt=" << dt << endl;
-//     }else
-//     {
-// 	cout << "Timestep defined by CFL  = " << dt << endl;
-//     }
 
     //End pf definition of distro function - Multi dimensional arrays = PITA
     //END OF INITIAL CONDITIONS
@@ -331,24 +304,7 @@ int main()
     //}while(t<=1000.0);
     
     FreeThreevector3D(B,gridx,gridy);
-    
-    for(i=0;i<gridx;i++) //Deallocation of the memory used for the distro function    
-    {
-	  for(j=0;j<gridy;j++)
-	  {
-	    for(k=0;k<gridz;k++)
-	    {
-		  for(n=0;n<nmax;n++)	 
-		  {
-		    delete [] f[i][j][k][n];
-		  }
-		  delete [] f[i][j][k];
-	    }
-	    delete [] f[i][j];
-	  }
-	  delete [] f[i];
-    }
-    delete [] f;
+    FreeDistrF(f,gridx,gridy,gridy,nmax);
     delete [] str;
     return 0;
     
